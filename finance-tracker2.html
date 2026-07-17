@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Finance Tracker</title>
+<style>
+  :root{
+    --bg:#12181a;
+    --panel:#1a2225;
+    --panel-2:#212b2e;
+    --line:#2c383c;
+    --ink:#e9efed;
+    --ink-dim:#9fb0ac;
+    --accent:#4fb8a0;
+    --accent-2:#e0a458;
+    --bad:#e0705e;
+    --good:#5cbf8e;
+    --mono: 'SF Mono', 'Courier New', monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Segoe UI', system-ui, -apple-system, sans-serif;
+    padding:20px;
+  }
+  h1{
+    font-size:1.4rem;
+    letter-spacing:0.02em;
+    margin:0 0 4px 0;
+    font-weight:600;
+  }
+  .sub{
+    color:var(--ink-dim);
+    font-size:0.85rem;
+    margin-bottom:20px;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(230px,1fr));
+    gap:14px;
+    margin-bottom:20px;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px 16px;
+  }
+  .card .label{
+    color:var(--ink-dim);
+    font-size:0.72rem;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    margin-bottom:6px;
+  }
+  .card .value{
+    font-family:var(--mono);
+    font-size:1.35rem;
+    font-weight:600;
+  }
+  .net-card{
+    grid-column:1/-1;
+    background:linear-gradient(135deg, var(--panel-2), var(--panel));
+    border:1px solid var(--accent);
+  }
+  .net-card .value{ font-size:1.8rem; }
+  .positive{ color:var(--good); }
+  .negative{ color:var(--bad); }
+
+  .section{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px;
+    margin-bottom:16px;
+  }
+  .section h2{
+    font-size:0.95rem;
+    margin:0 0 12px 0;
+    color:var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:0.88rem;
+  }
+  th,td{
+    text-align:left;
+    padding:7px 6px;
+    border-bottom:1px solid var(--line);
+  }
+  th{
+    color:var(--ink-dim);
+    font-weight:500;
+    font-size:0.72rem;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+  }
+  td.amt{ font-family:var(--mono); text-align:right; }
+  .row-actions{ text-align:right; white-space:nowrap; }
+  button{
+    font-family:inherit;
+    cursor:pointer;
+    border:none;
+    border-radius:6px;
+    padding:6px 12px;
+    font-size:0.82rem;
+    background:var(--accent);
+    color:#0d1414;
+    font-weight:600;
+  }
+  button.secondary{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+  }
+  button.danger{
+    background:transparent;
+    border:1px solid var(--bad);
+    color:var(--bad);
+    padding:4px 8px;
+    font-size:0.75rem;
+  }
+  input, select{
+    font-family:inherit;
+    background:var(--bg);
+    border:1px solid var(--line);
+    color:var(--ink);
+    border-radius:6px;
+    padding:7px 8px;
+    font-size:0.85rem;
+  }
+  .form-row{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-bottom:4px;
+  }
+  .form-row input, .form-row select{ flex:1; min-width:100px; }
+  .log-entry{
+    display:flex;
+    justify-content:space-between;
+    padding:8px 0;
+    border-bottom:1px solid var(--line);
+    font-size:0.85rem;
+  }
+  .log-entry .meta{ color:var(--ink-dim); font-size:0.75rem; }
+  .tag{
+    font-size:0.68rem;
+    padding:2px 7px;
+    border-radius:20px;
+    font-weight:600;
+    text-transform:uppercase;
+  }
+  .tag.earning{ background:rgba(92,191,142,0.15); color:var(--good); }
+  .tag.expense{ background:rgba(224,112,94,0.15); color:var(--bad); }
+  .empty{ color:var(--ink-dim); font-size:0.85rem; font-style:italic; padding:8px 0; }
+  .status{
+    font-size:0.75rem;
+    color:var(--ink-dim);
+    margin-top:6px;
+    min-height:16px;
+  }
+  .reset-link{
+    color:var(--ink-dim);
+    font-size:0.75rem;
+    text-decoration:underline;
+    cursor:pointer;
+    background:none;
+    border:none;
+    padding:0;
+  }
+  summary::-webkit-details-marker{ display:none; }
+  summary::marker{ content:''; }
+  details[open] summary{ margin-bottom:4px; }
+  .pie-legend-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-size:0.82rem;
+    padding:4px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .pie-legend-row .swatch{
+    display:inline-block;
+    width:10px; height:10px;
+    border-radius:3px;
+    margin-right:8px;
+  }
+  .pie-legend-name{ display:flex; align-items:center; }
+  .pie-legend-amt{ font-family:var(--mono); color:var(--ink-dim); }
+</style>
+</head>
+<body>
+
+<h1>💰 Finance Tracker</h1>
+<div class="sub" id="lastUpdated">Loading your data…</div>
+
+<div class="grid" id="balanceCards"></div>
+
+<div class="section">
+  <h2>Log Today's Earnings / Expenses</h2>
+  <div class="form-row">
+    <select id="entryType">
+      <option value="earning">Earning</option>
+      <option value="expense">Expense</option>
+    </select>
+    <select id="entryAccount">
+      <option value="momo">MoMo</option>
+      <option value="cash">Cash</option>
+      <option value="savings">Savings</option>
+    </select>
+    <input id="entryAmount" type="number" placeholder="Amount (FCFA)" min="0">
+    <input id="entryNote" type="text" placeholder="Category / source (e.g. 'transport', 'client payment')">
+    <button onclick="addEntry()">Add</button>
+  </div>
+  <div class="status" id="entryStatus"></div>
+  <div class="sub" style="margin-bottom:0;margin-top:6px;">📌 Rule: 25% of every earning is automatically moved to Savings. Expenses are unaffected.</div>
+</div>
+
+<div class="section">
+  <h2>Debtors <span style="font-weight:400;color:var(--ink-dim);font-size:0.8rem;">people who owe you</span></h2>
+  <table id="debtorsTable">
+    <thead><tr><th>Name</th><th style="text-align:right;">Amount</th><th>Due Date</th><th>Method</th><th></th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <div class="form-row" style="margin-top:10px;">
+    <input id="newDebtorName" type="text" placeholder="Name">
+    <input id="newDebtorAmount" type="number" placeholder="Amount (FCFA)">
+    <input id="newDebtorDueDate" type="date" title="Due date (optional)">
+    <button onclick="addDebtor()">Add Debtor</button>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Debts <span style="font-weight:400;color:var(--ink-dim);font-size:0.8rem;">people you owe</span></h2>
+  <table id="debtsTable">
+    <thead><tr><th>Name</th><th style="text-align:right;">Amount</th><th>Due Date</th><th>Method</th><th></th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <div class="form-row" style="margin-top:10px;">
+    <input id="newDebtName" type="text" placeholder="Name">
+    <input id="newDebtAmount" type="number" placeholder="Amount (FCFA)">
+    <input id="newDebtDueDate" type="date" title="Due date (optional)">
+    <button onclick="addDebt()">Add Debt</button>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Upcoming Due Dates <span style="font-weight:400;color:var(--ink-dim);font-size:0.8rem;">debts you owe and debtors who owe you</span></h2>
+  <div id="dueDatesOverview"></div>
+</div>
+
+<div class="section">
+  <h2>Earnings & Expenses Analysis
+    <select id="analysisRange" onchange="renderAnalysis()" style="width:auto;">
+      <option value="1">Today</option>
+      <option value="7">Last 7 days</option>
+      <option value="30" selected>Last 30 days</option>
+      <option value="90">Last 3 months</option>
+      <option value="180">Last 6 months</option>
+      <option value="365">Last year</option>
+      <option value="all">All time</option>
+    </select>
+  </h2>
+  <div class="grid" id="analysisCards" style="margin-bottom:14px;"></div>
+  <div id="analysisChart"></div>
+  <div style="margin-top:14px;">
+    <div class="label" style="color:var(--ink-dim);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">By account</div>
+    <table id="analysisByAccount">
+      <thead><tr><th>Account</th><th style="text-align:right;">Earned</th><th style="text-align:right;">Spent</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<details class="section" id="breakdownDetails">
+  <summary style="cursor:pointer;font-size:0.95rem;font-weight:600;list-style:none;display:flex;align-items:center;justify-content:space-between;">
+    <span>🔎 Detailed Breakdown (by category)</span>
+    <span style="color:var(--ink-dim);font-size:0.75rem;font-weight:400;">click to expand</span>
+  </summary>
+
+  <div style="margin-top:14px;">
+    <div class="form-row" style="margin-bottom:14px;">
+      <select id="breakdownRange" onchange="renderBreakdown()" style="width:auto;">
+        <option value="1">Today</option>
+        <option value="7">Last 7 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="90">Last 3 months</option>
+        <option value="180">Last 6 months</option>
+        <option value="365">Last year</option>
+        <option value="all">All time</option>
+      </select>
+    </div>
+
+    <div class="grid" style="grid-template-columns:1fr 1fr;gap:20px;">
+      <div>
+        <div class="label" style="color:var(--good);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Earnings — what's bringing money in</div>
+        <div id="earningsPie"></div>
+        <div id="earningsLegend" style="margin-top:10px;"></div>
+      </div>
+      <div>
+        <div class="label" style="color:var(--bad);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Expenses — what's taking money out</div>
+        <div id="expensesPie"></div>
+        <div id="expensesLegend" style="margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+</details>
+
+<div class="section">
+  <h2>Recent Activity</h2>
+  <div id="activityLog"></div>
+</div>
+
+<div class="section">
+  <button class="reset-link" onclick="resetAll()">Reset all data</button>
+</div>
+
+<script>
+const DEFAULT_STATE = {
+  balances: { momo: 23000, cash: 7000, savings: 8000 },
+  debtors: [
+    { id: 'd1', name: 'Boss', amount: 40000 },
+    { id: 'd2', name: 'Ben', amount: 13000 },
+    { id: 'd3', name: 'Monero', amount: 5000 }
+  ],
+  debts: [
+    { id: 'b1', name: 'Randy', amount: 100000 },
+    { id: 'b2', name: 'Dad', amount: 70000 },
+    { id: 'b3', name: 'Mark', amount: 40000 }
+  ],
+  log: [],
+  lastUpdated: null
+};
+
+let state = null;
+const KEY = 'finance-state';
+const SAVINGS_RATE = 0.25;
+
+function fmt(n){
+  return Number(n).toLocaleString('en-US') + ' FCFA';
+}
+
+async function loadState(){
+  try{
+    const res = await window.storage.get(KEY, false);
+    state = res ? JSON.parse(res.value) : DEFAULT_STATE;
+  }catch(e){
+    state = DEFAULT_STATE;
+  }
+  render();
+}
+
+async function saveState(){
+  state.lastUpdated = new Date().toISOString();
+  try{
+    await window.storage.set(KEY, JSON.stringify(state), false);
+  }catch(e){
+    console.error('Save failed', e);
+  }
+  render();
+}
+
+function totalDebtors(){ return state.debtors.reduce((s,d)=>s+Number(d.amount),0); }
+function totalDebts(){ return state.debts.reduce((s,d)=>s+Number(d.amount),0); }
+function totalBalance(){ return state.balances.momo + state.balances.cash + state.balances.savings; }
+function netPosition(){ return totalBalance() + totalDebtors() - totalDebts(); }
+
+function render(){
+  // last updated
+  const lu = document.getElementById('lastUpdated');
+  lu.textContent = state.lastUpdated
+    ? 'Last updated: ' + new Date(state.lastUpdated).toLocaleString()
+    : 'No entries yet — starting balances loaded';
+
+  // balance cards
+  const cards = document.getElementById('balanceCards');
+  const net = netPosition();
+  cards.innerHTML = `
+    <div class="card"><div class="label">MoMo</div><div class="value">${fmt(state.balances.momo)}</div></div>
+    <div class="card"><div class="label">Cash</div><div class="value">${fmt(state.balances.cash)}</div></div>
+    <div class="card"><div class="label">Savings</div><div class="value">${fmt(state.balances.savings)}</div></div>
+    <div class="card"><div class="label">Owed to you</div><div class="value">${fmt(totalDebtors())}</div></div>
+    <div class="card"><div class="label">You owe</div><div class="value">${fmt(totalDebts())}</div></div>
+    <div class="card net-card">
+      <div class="label">Net Position (balances + debtors − debts)</div>
+      <div class="value ${net>=0?'positive':'negative'}">${net>=0?'':'−'}${fmt(Math.abs(net))}</div>
+    </div>
+  `;
+
+  // debtors table
+  const dTbody = document.querySelector('#debtorsTable tbody');
+  const sortedDebtors = [...state.debtors].sort((a,b)=>{
+    if(!a.dueDate && !b.dueDate) return 0;
+    if(!a.dueDate) return 1;
+    if(!b.dueDate) return -1;
+    return new Date(a.dueDate) - new Date(b.dueDate);
+  });
+  dTbody.innerHTML = sortedDebtors.length ? sortedDebtors.map(d=>`
+    <tr>
+      <td>${escapeHtml(d.name)}</td>
+      <td class="amt">${fmt(d.amount)}</td>
+      <td>${dueDateCell(d.dueDate)}</td>
+      <td>
+        <select id="method-debtor-${d.id}" style="width:auto;padding:5px 6px;font-size:0.8rem;">
+          <option value="momo">MoMo</option>
+          <option value="cash">Cash</option>
+          <option value="savings">Savings</option>
+        </select>
+      </td>
+      <td class="row-actions">
+        <button onclick="settleDebtor('${d.id}')">Mark Paid</button>
+        <button class="danger" onclick="removeDebtor('${d.id}')">Remove</button>
+      </td>
+    </tr>
+  `).join('') : '';
+  if(!state.debtors.length) dTbody.innerHTML = '<tr><td colspan="5" class="empty">No debtors on file</td></tr>';
+
+  // debts table
+  const bTbody = document.querySelector('#debtsTable tbody');
+  const sortedDebts = [...state.debts].sort((a,b)=>{
+    if(!a.dueDate && !b.dueDate) return 0;
+    if(!a.dueDate) return 1;
+    if(!b.dueDate) return -1;
+    return new Date(a.dueDate) - new Date(b.dueDate);
+  });
+  bTbody.innerHTML = sortedDebts.length ? sortedDebts.map(d=>`
+    <tr>
+      <td>${escapeHtml(d.name)}</td>
+      <td class="amt">${fmt(d.amount)}</td>
+      <td>${dueDateCell(d.dueDate)}</td>
+      <td>
+        <select id="method-debt-${d.id}" style="width:auto;padding:5px 6px;font-size:0.8rem;">
+          <option value="momo">MoMo</option>
+          <option value="cash">Cash</option>
+          <option value="savings">Savings</option>
+        </select>
+      </td>
+      <td class="row-actions">
+        <button onclick="settleDebt('${d.id}')">Mark Paid</button>
+        <button class="danger" onclick="removeDebt('${d.id}')">Remove</button>
+      </td>
+    </tr>
+  `).join('') : '';
+  if(!state.debts.length) bTbody.innerHTML = '<tr><td colspan="5" class="empty">No debts on file</td></tr>';
+
+  renderDueDatesOverview();
+
+  // activity log
+  const log = document.getElementById('activityLog');
+  if(!state.log.length){
+    log.innerHTML = '<div class="empty">No activity logged yet</div>';
+  } else {
+    log.innerHTML = state.log.slice().reverse().slice(0,25).map(e=>`
+      <div class="log-entry">
+        <div>
+          <span class="tag ${e.type}">${e.type}</span>
+          &nbsp; ${fmt(e.amount)} — ${escapeHtml(e.account)}${e.note ? ' · ' + escapeHtml(e.note) : ''}${e.splitInfo ? ' <span style="color:var(--ink-dim);">(' + escapeHtml(e.splitInfo) + ')</span>' : ''}
+        </div>
+        <div class="meta">${new Date(e.date).toLocaleString()}</div>
+      </div>
+    `).join('');
+  }
+
+  renderAnalysis();
+  renderBreakdown();
+}
+
+function renderAnalysis(){
+  const rangeVal = document.getElementById('analysisRange').value;
+  let entries = state.log.filter(e => e.type === 'earning' || e.type === 'expense');
+
+  let cutoff = null;
+  if(rangeVal !== 'all'){
+    cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - Number(rangeVal));
+  }
+  if(cutoff) entries = entries.filter(e => new Date(e.date) >= cutoff);
+
+  const totalEarned = entries.filter(e=>e.type==='earning').reduce((s,e)=>s+Number(e.amount),0);
+  const totalSpent = entries.filter(e=>e.type==='expense').reduce((s,e)=>s+Number(e.amount),0);
+  const cashflow = totalEarned - totalSpent;
+  const savedAuto = entries.filter(e=>e.type==='earning' && e.account!=='savings').reduce((s,e)=>s+Math.round(Number(e.amount)*SAVINGS_RATE),0);
+
+  document.getElementById('analysisCards').innerHTML = `
+    <div class="card"><div class="label">Total Earned</div><div class="value positive">${fmt(totalEarned)}</div></div>
+    <div class="card"><div class="label">Total Spent</div><div class="value negative">${fmt(totalSpent)}</div></div>
+    <div class="card"><div class="label">Net Cash Flow</div><div class="value ${cashflow>=0?'positive':'negative'}">${cashflow>=0?'':'−'}${fmt(Math.abs(cashflow))}</div></div>
+    <div class="card"><div class="label">Auto-Saved (25%)</div><div class="value" style="color:var(--accent);">${fmt(savedAuto)}</div></div>
+  `;
+
+  // by account breakdown
+  const accounts = ['momo','cash','savings'];
+  const byAcc = {};
+  accounts.forEach(a => byAcc[a] = { earned:0, spent:0 });
+  entries.forEach(e=>{
+    if(!byAcc[e.account]) byAcc[e.account] = { earned:0, spent:0 };
+    if(e.type==='earning') byAcc[e.account].earned += Number(e.amount);
+    else byAcc[e.account].spent += Number(e.amount);
+  });
+  const tbody = document.querySelector('#analysisByAccount tbody');
+  tbody.innerHTML = Object.keys(byAcc).map(a=>`
+    <tr>
+      <td>${a.charAt(0).toUpperCase()+a.slice(1)}</td>
+      <td class="amt positive">${fmt(byAcc[a].earned)}</td>
+      <td class="amt negative">${fmt(byAcc[a].spent)}</td>
+    </tr>
+  `).join('');
+
+  // simple day-by-day bar chart (earnings vs expenses)
+  const chartEl = document.getElementById('analysisChart');
+  if(!entries.length){
+    chartEl.innerHTML = '<div class="empty">No earnings or expenses logged in this range yet.</div>';
+    return;
+  }
+
+  const dayMap = {};
+  const rangeNum = rangeVal === 'all' ? null : Number(rangeVal);
+  // choose bucket granularity based on range length so the chart stays readable
+  let bucket = 'day';
+  if(rangeNum === null || rangeNum > 180) bucket = 'month';
+  else if(rangeNum > 45) bucket = 'week';
+
+  function bucketKey(dateObj){
+    if(bucket === 'day') return dateObj.toISOString().slice(0,10);
+    if(bucket === 'month') return dateObj.toISOString().slice(0,7); // YYYY-MM
+    // week: use ISO week start (Monday)
+    const d = new Date(dateObj);
+    const day = (d.getDay() + 6) % 7; // Mon=0
+    d.setDate(d.getDate() - day);
+    return d.toISOString().slice(0,10);
+  }
+
+  entries.forEach(e=>{
+    const key = bucketKey(new Date(e.date));
+    if(!dayMap[key]) dayMap[key] = { earned:0, spent:0 };
+    if(e.type==='earning') dayMap[key].earned += Number(e.amount);
+    else dayMap[key].spent += Number(e.amount);
+  });
+  const days = Object.keys(dayMap).sort();
+  const maxVal = Math.max(1, ...days.map(d => Math.max(dayMap[d].earned, dayMap[d].spent)));
+
+  const W = 700, H = 220, padL = 10, padR = 10, padB = 30, padT = 10;
+  const chartW = W - padL - padR;
+  const barGroupW = chartW / days.length;
+  const barW = Math.min(18, barGroupW/2 - 4);
+
+  let bars = '';
+  days.forEach((d,i)=>{
+    const gx = padL + i*barGroupW + barGroupW/2;
+    const eh = (dayMap[d].earned / maxVal) * (H - padB - padT);
+    const sh = (dayMap[d].spent / maxVal) * (H - padB - padT);
+    const baseY = H - padB;
+    bars += `<rect x="${gx-barW-2}" y="${baseY-eh}" width="${barW}" height="${eh}" fill="var(--good)" rx="2"/>`;
+    bars += `<rect x="${gx+2}" y="${baseY-sh}" width="${barW}" height="${sh}" fill="var(--bad)" rx="2"/>`;
+    if(days.length <= 20){
+      const label = bucket === 'month' ? d.slice(0,7) : d.slice(5);
+      bars += `<text x="${gx}" y="${H-8}" text-anchor="middle" font-size="9" fill="var(--ink-dim)">${label}</text>`;
+    }
+  });
+
+  chartEl.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;">
+      <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="var(--line)" />
+      ${bars}
+    </svg>
+    <div style="display:flex;gap:16px;font-size:0.75rem;color:var(--ink-dim);margin-top:6px;">
+      <span><span style="display:inline-block;width:10px;height:10px;background:var(--good);border-radius:2px;margin-right:5px;"></span>Earned</span>
+      <span><span style="display:inline-block;width:10px;height:10px;background:var(--bad);border-radius:2px;margin-right:5px;"></span>Spent</span>
+    </div>
+  `;
+}
+
+const PIE_COLORS = ['#4fb8a0','#e0a458','#5c8fbf','#c77dc9','#e0705e','#a8bf5c','#8a6fd1','#5cbf8e','#d18a6f','#6fb3d1','#bf5c8f','#95a05c'];
+
+function groupByCategory(entries){
+  const groups = {};
+  entries.forEach(e=>{
+    const key = (e.note && e.note.trim()) ? e.note.trim() : 'Uncategorized';
+    if(!groups[key]) groups[key] = 0;
+    groups[key] += Number(e.amount);
+  });
+  return Object.entries(groups)
+    .map(([name,amount])=>({name, amount}))
+    .sort((a,b)=>b.amount-a.amount);
+}
+
+function buildDonut(data, total){
+  if(!data.length || total <= 0){
+    return '<div class="empty">Nothing logged in this range yet.</div>';
+  }
+  const R = 60, CX = 70, CY = 70, STROKE = 26;
+  const circumference = 2 * Math.PI * R;
+  let offset = 0;
+  let circles = '';
+  data.forEach((d, i)=>{
+    const frac = d.amount / total;
+    const dash = frac * circumference;
+    const color = PIE_COLORS[i % PIE_COLORS.length];
+    circles += `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${color}"
+      stroke-width="${STROKE}" stroke-dasharray="${dash} ${circumference-dash}"
+      stroke-dashoffset="${-offset}" transform="rotate(-90 ${CX} ${CY})">
+      <title>${escapeHtml(d.name)}: ${fmt(d.amount)} (${(frac*100).toFixed(1)}%)</title>
+    </circle>`;
+    offset += dash;
+  });
+  return `<svg viewBox="0 0 140 140" style="width:150px;height:150px;">
+    ${circles}
+    <circle cx="${CX}" cy="${CY}" r="${R-STROKE/2-2}" fill="var(--panel)" />
+  </svg>`;
+}
+
+function buildLegend(data, total){
+  if(!data.length) return '';
+  return data.map((d,i)=>{
+    const color = PIE_COLORS[i % PIE_COLORS.length];
+    const pct = total > 0 ? ((d.amount/total)*100).toFixed(1) : '0.0';
+    return `<div class="pie-legend-row">
+      <span class="pie-legend-name"><span class="swatch" style="background:${color};"></span>${escapeHtml(d.name)} <span style="color:var(--ink-dim);margin-left:6px;">${pct}%</span></span>
+      <span class="pie-legend-amt">${fmt(d.amount)}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderBreakdown(){
+  const rangeSel = document.getElementById('breakdownRange');
+  if(!rangeSel) return; // not yet rendered
+  const rangeVal = rangeSel.value;
+  let entries = state.log.filter(e => e.type === 'earning' || e.type === 'expense');
+
+  if(rangeVal !== 'all'){
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - Number(rangeVal));
+    entries = entries.filter(e => new Date(e.date) >= cutoff);
+  }
+
+  const earningEntries = entries.filter(e=>e.type==='earning');
+  const expenseEntries = entries.filter(e=>e.type==='expense');
+
+  const earningGroups = groupByCategory(earningEntries);
+  const expenseGroups = groupByCategory(expenseEntries);
+
+  const totalEarned = earningGroups.reduce((s,g)=>s+g.amount,0);
+  const totalSpent = expenseGroups.reduce((s,g)=>s+g.amount,0);
+
+  document.getElementById('earningsPie').innerHTML = buildDonut(earningGroups, totalEarned);
+  document.getElementById('earningsLegend').innerHTML = buildLegend(earningGroups, totalEarned);
+  document.getElementById('expensesPie').innerHTML = buildDonut(expenseGroups, totalSpent);
+  document.getElementById('expensesLegend').innerHTML = buildLegend(expenseGroups, totalSpent);
+}
+
+function daysUntil(dateStr){
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const due = new Date(dateStr);
+  due.setHours(0,0,0,0);
+  return Math.round((due - today) / 86400000);
+}
+
+function dueDateCell(dateStr){
+  if(!dateStr) return '<span style="color:var(--ink-dim);font-size:0.8rem;">—</span>';
+  const diff = daysUntil(dateStr);
+  const label = new Date(dateStr).toLocaleDateString();
+  let color = 'var(--ink-dim)', text = label;
+  if(diff < 0){ color = 'var(--bad)'; text = `${label} (${Math.abs(diff)}d overdue)`; }
+  else if(diff === 0){ color = 'var(--bad)'; text = `${label} (due today)`; }
+  else if(diff <= 7){ color = 'var(--accent-2)'; text = `${label} (${diff}d left)`; }
+  return `<span style="color:${color};font-size:0.82rem;">${text}</span>`;
+}
+
+function renderDueDatesOverview(){
+  const el = document.getElementById('dueDatesOverview');
+  if(!el) return;
+  const debtItems = state.debts.filter(d=>d.dueDate).map(d=>({...d, kind:'debt'}));
+  const debtorItems = state.debtors.filter(d=>d.dueDate).map(d=>({...d, kind:'debtor'}));
+  const all = [...debtItems, ...debtorItems];
+
+  if(!all.length){
+    el.innerHTML = '<div class="empty">No due dates set. Add one when creating a debt or debtor to track it here.</div>';
+    return;
+  }
+  const sorted = all.sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
+  el.innerHTML = sorted.map(d=>{
+    const diff = daysUntil(d.dueDate);
+    let statusTag = `<span class="tag" style="background:rgba(159,176,172,0.15);color:var(--ink-dim);">upcoming</span>`;
+    if(diff < 0) statusTag = `<span class="tag" style="background:rgba(224,112,94,0.15);color:var(--bad);">overdue</span>`;
+    else if(diff <= 7) statusTag = `<span class="tag" style="background:rgba(224,164,88,0.15);color:var(--accent-2);">due soon</span>`;
+    const kindTag = d.kind === 'debt'
+      ? `<span class="tag expense">you owe</span>`
+      : `<span class="tag earning">owed to you</span>`;
+    return `
+      <div class="log-entry">
+        <div>${kindTag} ${statusTag} &nbsp; <strong>${escapeHtml(d.name)}</strong> — ${fmt(d.amount)}</div>
+        <div class="meta">${dueDateCell(d.dueDate)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function addEntry(){
+  const type = document.getElementById('entryType').value;
+  const account = document.getElementById('entryAccount').value;
+  const amountRaw = document.getElementById('entryAmount').value;
+  const note = document.getElementById('entryNote').value.trim();
+  const status = document.getElementById('entryStatus');
+
+  const amount = Number(amountRaw);
+  if(!amountRaw || isNaN(amount) || amount <= 0){
+    status.textContent = 'Enter a valid amount.';
+    status.style.color = 'var(--bad)';
+    return;
+  }
+
+  if(type === 'earning'){
+    if(account === 'savings'){
+      // already going to savings, no split needed
+      state.balances.savings += amount;
+      state.log.push({ type, account, amount, note, date: new Date().toISOString() });
+    } else {
+      const saveCut = Math.round(amount * SAVINGS_RATE);
+      const remainder = amount - saveCut;
+      state.balances[account] += remainder;
+      state.balances.savings += saveCut;
+      state.log.push({
+        type, account, amount, note,
+        splitInfo: `${fmt(remainder)} to ${account}, ${fmt(saveCut)} (25%) to savings`,
+        date: new Date().toISOString()
+      });
+    }
+  } else {
+    if(state.balances[account] < amount){
+      status.textContent = `Warning: this puts ${account} below zero.`;
+      status.style.color = 'var(--accent-2)';
+    }
+    state.balances[account] -= amount;
+    state.log.push({ type, account, amount, note, date: new Date().toISOString() });
+  }
+
+  document.getElementById('entryAmount').value = '';
+  document.getElementById('entryNote').value = '';
+
+  await saveState();
+  status.textContent = type === 'earning' && account !== 'savings'
+    ? `Logged earning: ${fmt(amount)} — 25% auto-saved.`
+    : `Logged ${type}: ${fmt(amount)} (${account}).`;
+  status.style.color = 'var(--good)';
+}
+
+async function addDebtor(){
+  const name = document.getElementById('newDebtorName').value.trim();
+  const amount = Number(document.getElementById('newDebtorAmount').value);
+  const dueDate = document.getElementById('newDebtorDueDate').value || null;
+  if(!name || !amount || amount<=0) return;
+  state.debtors.push({ id: 'd'+Date.now(), name, amount, dueDate });
+  document.getElementById('newDebtorName').value='';
+  document.getElementById('newDebtorAmount').value='';
+  document.getElementById('newDebtorDueDate').value='';
+  await saveState();
+}
+
+async function addDebt(){
+  const name = document.getElementById('newDebtName').value.trim();
+  const amount = Number(document.getElementById('newDebtAmount').value);
+  const dueDate = document.getElementById('newDebtDueDate').value || null;
+  if(!name || !amount || amount<=0) return;
+  state.debts.push({ id: 'b'+Date.now(), name, amount, dueDate });
+  document.getElementById('newDebtName').value='';
+  document.getElementById('newDebtAmount').value='';
+  document.getElementById('newDebtDueDate').value='';
+  await saveState();
+}
+
+async function settleDebtor(id){
+  const debtor = state.debtors.find(d=>d.id===id);
+  if(!debtor) return;
+  const method = document.getElementById(`method-debtor-${id}`).value;
+
+  if(method === 'savings'){
+    state.balances.savings += debtor.amount;
+    state.log.push({
+      type: 'earning',
+      account: method,
+      amount: debtor.amount,
+      note: `Debt repayment — ${debtor.name}`,
+      date: new Date().toISOString()
+    });
+  } else {
+    const saveCut = Math.round(debtor.amount * SAVINGS_RATE);
+    const remainder = debtor.amount - saveCut;
+    state.balances[method] += remainder;
+    state.balances.savings += saveCut;
+    state.log.push({
+      type: 'earning',
+      account: method,
+      amount: debtor.amount,
+      note: `Debt repayment — ${debtor.name}`,
+      splitInfo: `${fmt(remainder)} to ${method}, ${fmt(saveCut)} (25%) to savings`,
+      date: new Date().toISOString()
+    });
+  }
+
+  state.debtors = state.debtors.filter(d=>d.id!==id);
+  await saveState();
+}
+
+async function removeDebtor(id){
+  if(!confirm('Remove this debtor without recording a payment? Use "Mark Paid" instead if they actually paid you.')) return;
+  state.debtors = state.debtors.filter(d=>d.id!==id);
+  await saveState();
+}
+
+async function settleDebt(id){
+  const debt = state.debts.find(d=>d.id===id);
+  if(!debt) return;
+  const method = document.getElementById(`method-debt-${id}`).value;
+
+  if(state.balances[method] < debt.amount){
+    if(!confirm(`This will put your ${method} balance below zero. Continue anyway?`)) return;
+  }
+
+  state.balances[method] -= debt.amount;
+  state.log.push({
+    type: 'expense',
+    account: method,
+    amount: debt.amount,
+    note: `Debt payment — ${debt.name}`,
+    date: new Date().toISOString()
+  });
+  state.debts = state.debts.filter(d=>d.id!==id);
+  await saveState();
+}
+
+async function removeDebt(id){
+  if(!confirm('Remove this debt without recording a payment? Use "Mark Paid" instead if you actually paid it off.')) return;
+  state.debts = state.debts.filter(d=>d.id!==id);
+  await saveState();
+}
+
+async function resetAll(){
+  if(!confirm('This will erase all saved data and restore the original starting figures. Continue?')) return;
+  state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+  await saveState();
+}
+
+loadState();
+</script>
+</body>
+</html>
